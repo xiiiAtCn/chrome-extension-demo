@@ -6,6 +6,8 @@ download.onclick = downloadFile
 
 let url = []
 
+let linkList = []
+
 function downloadFile() {
     chrome.downloads.download({url: url[0].src}, function(id) {
         console.log(id)
@@ -19,6 +21,8 @@ chrome.runtime.onMessage.addListener(function(request, sender) {
         message = message.replace(/\s{2}/g, '')
         let blob = new Blob([message], {type: 'text/html'})
         let a = document.createElement('a')
+        let urlList = collect(message)
+        console.log(urlList)
         a.src = URL.createObjectURL(blob)
         url.push(a)
     }
@@ -33,4 +37,21 @@ function executeScript () {
             message = `There was an error injecting script: ${chrome.runtime.lastError}`
         }
     })
+}
+
+function collect (domStr) {
+    let doc = document.createElement('html')
+    doc.innerHTML = domStr
+    let urlList = []
+    let queue = []
+    let target = doc
+    debugger
+    while(target) {
+        urlList.concat(splitUrl(target));
+        // didn't work
+        [].concat.apply(queue, target.children)
+        console.log(queue)
+        target = queue.shift()
+    }
+    return urlList
 }
