@@ -7,26 +7,26 @@
  * link标签: href tagName: LINK
  * img标签: src tagName: IMG
  */
-function splitUrl(dom) {
-    //a标签 link标签
+function splitUrl(dom, base) {
+    // a标签 link标签
     let urlList = []
     if (dom.tagName === 'A' || dom.tagName === 'LINK') {
         if (dom.href !== '') {
-            urlList.push(resolveUrl(dom.href))
+            urlList.push(resolveUrl(dom.href, base))
         }
     }
 
-    //IMG标签
-    if (dom.tagName === 'IMG') {
-        if (dom.src !== '') {
-            urlList.push(resolveUrl(dom.src))
+    // img标签 script标签
+    if (dom.tagName === 'IMG' || dom.tagName === 'SCRIPT') {
+        if (dom.src != '') {
+            urlList.push(resolveUrl(dom.src, base))
         }
     }
 
     // 暂时只处理带协议的url
     for ( let key in dom.dataset) {
         let value = dom.getAttribute(`data-${key}`)
-        if (isUrl(value)) {
+        if (value && isUrl(value)) {
             urlList.push(resolveUrl(value))
         }
     }
@@ -41,7 +41,8 @@ function isUrl (str) {
     return false
 }
 
-function resolveUrl (str) {
+
+function resolveUrl (str, base) {
     let url = {
         protocol: '',
         host: '',
@@ -49,13 +50,23 @@ function resolveUrl (str) {
         queries: '',
         hash: ''
     }
-    
+
+    // 移除插件影响
+    if (str.startsWith(base)) {
+        str = str.match(/.*\/\/[^\/]*(\/.*)/)[1]
+    }
+    if (str.startsWith('chrome')) {
+        str = str.match(/(.*)\/\/(.*)/)[2]
+    }
+
     if (str.startsWith('https')) {
         url.protocol = 'https'
         str = str.slice(8)
     } else if (str.startsWith('http')) {
         url.protocol = 'http'
-        str = slice(7)
+        str = str.slice(7)
+    } else if (str.startsWith('//')) {
+        str = str.slice(2)
     }
     //# ? /
     let hash = str.split('#')

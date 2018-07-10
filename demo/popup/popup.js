@@ -40,17 +40,16 @@ function executeScript () {
 }
 
 function collect (domStr) {
+    let base = chrome.runtime.getURL('')
     let doc = document.createElement('html')
     doc.innerHTML = domStr
     let urlList = []
     let queue = []
     let target = doc
-    debugger
+
     while(target) {
-        urlList.concat(splitUrl(target));
-        // didn't work
-        [].concat.apply(queue, target.children)
-        console.log(queue)
+        urlList = urlList.concat(splitUrl(target, base));
+        queue = [].concat.apply(queue, target.children)
         target = queue.shift()
     }
     return urlList
