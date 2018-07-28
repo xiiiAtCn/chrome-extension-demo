@@ -12,14 +12,14 @@ function splitUrl(dom, base) {
     let urlList = []
     if (dom.tagName === 'A' || dom.tagName === 'LINK') {
         if (dom.href !== '') {
-            urlList.push(resolveUrl(dom.href, base))
+            urlList.push(resolveUrl(dom, 'href', dom.href, base))
         }
     }
 
     // img标签 script标签
     if (dom.tagName === 'IMG' || dom.tagName === 'SCRIPT') {
         if (dom.src != '') {
-            urlList.push(resolveUrl(dom.src, base))
+            urlList.push(resolveUrl(dom, 'src',dom.src, base))
         }
     }
 
@@ -27,7 +27,7 @@ function splitUrl(dom, base) {
     for ( let key in dom.dataset) {
         let value = dom.getAttribute(`data-${key}`)
         if (value && isUrl(value)) {
-            urlList.push(resolveUrl(value))
+            urlList.push(resolveUrl(dom, `data-${key}`,value, value))
         }
     }
 
@@ -42,13 +42,17 @@ function isUrl (str) {
 }
 
 
-function resolveUrl (str, base) {
+function resolveUrl (reference, attributeType, str, base) {
     let url = {
         protocol: '',
         host: '',
         path: '',
         queries: '',
-        hash: ''
+        hash: '',
+        attributeType: attributeType,
+        reference: reference,
+        type: '',
+        filename: ''
     }
 
     // 移除插件影响
@@ -99,6 +103,12 @@ function resolveUrl (str, base) {
             url.host = path[0]
     }
     url.path = path.slice(1).join('/')
+    //css js png jpeg  暂未支持二进制流文件
+    let src = url.path
+    if (src.lastIndexOf('.') !== -1 && src.lastIndexOf('/') < src.lastIndexOf('.')) {
+        url.filename = src.slice(src.lastIndexOf('/') + 1)
+        url.type = src.slice(src.lastIndexOf('.') + 1)
+    }
     return url
 
 }

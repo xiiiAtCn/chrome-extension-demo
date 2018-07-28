@@ -2,29 +2,46 @@ let changeColor = document.getElementById('changeColor')
 changeColor.onclick = executeScript
 
 let download = document.getElementById('download')
-download.onclick = downloadFile
-
-let url = []
+download.addEventListener('click', () => {
+    urlList = urlList.filter(e => e.filename !== '' && e.host !== '')
+    urlList.forEach(e => {
+        e.src = `${e.protocol}://${e.host}/${e.path}`
+        let url = `.${(e.type ? '/' + e.type :'')}/${e.filename}`
+        if (e.attributeType === 'src') {
+            e.reference.src = url
+        } else if (e.attributeType=== 'href') {
+            e.reference.href = url
+        } else {
+            e.reference.setAttribute(e.type, url)
+        }
+        downloadFile(e, pathPrefix)
+    })
+    let index = `<html>${doc.innerHTML}</html>`
+    let blob = new Blob([index], {type: 'text/html'})
+    index = URL.createObjectURL(blob)
+    downloadFile({src: index, filename: `index.html`}, pathPrefix)
+})
 
 let linkList = []
+let pathPrefix = './demo'
 
-function downloadFile() {
-    chrome.downloads.download({url: url[0].src}, function(id) {
+function downloadFile(fileObject, pathPrefix) {
+    let url = `${(pathPrefix || '') + (fileObject.type ? '/' +fileObject.type :'')}/${fileObject.filename}`
+    chrome.downloads.download({ url: fileObject.src, filename: url }, function(id) {
         console.log(id)
+        console.log(url)
     })
 }
 
-let message = ''
+let doc = ''
+let urlList = []
 chrome.runtime.onMessage.addListener(function(request, sender) {
     if (request.action === 'getSource') {
-        message = request.source
-        message = message.replace(/\s{2}/g, '')
-        let blob = new Blob([message], {type: 'text/html'})
-        let a = document.createElement('a')
-        let urlList = collect(message)
+        doc = request.source
+        doc = doc.replace(/\s{2}/g, '')
+        urlList = []
+        doc = collect(doc, urlList)
         console.log(urlList)
-        a.src = URL.createObjectURL(blob)
-        url.push(a)
     }
 })
 
@@ -39,18 +56,17 @@ function executeScript () {
     })
 }
 
-function collect (domStr) {
+function collect (domStr, urlList) {
     let base = chrome.runtime.getURL('')
     let doc = document.createElement('html')
     doc.innerHTML = domStr
-    let urlList = []
     let queue = []
     let target = doc
 
     while(target) {
-        urlList = urlList.concat(splitUrl(target, base));
+        splitUrl(target, base).forEach(e => urlList.push(e))
         queue = [].concat.apply(queue, target.children)
         target = queue.shift()
     }
-    return urlList
+    return doc
 }
